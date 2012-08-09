@@ -1,55 +1,27 @@
-# Ransack
+# Ransack-mongoid
 
-Ransack is a rewrite of [MetaSearch](http://metautonomo.us/projects/metasearch). While it
-supports many of the same features as MetaSearch, its underlying implementation differs
-greatly from MetaSearch, and _backwards compatibility is not a design goal._
+## Notice: Under development!
 
-Ransack enables the creation of both simple and [advanced](http://ransack-demo.herokuapp.com/users/advanced_search)
-search forms against your application's models. If you're looking for something that
-simplifies query generation at the model or controller layer, you're probably not looking
-for Ransack (or MetaSearch, for that matter). Try
-[Squeel](http://metautonomo.us/projects/squeel) instead.
+Ransack-mongoid is an attempt to port most of the core [ransack](https://github.com/ernie/ransack) functionality for use with Mongoid (and possibly other Document based data store mappers)
+
+This project with started in response to
+
+[ransack mongoid issue 120](https://github.com/ernie/ransack/issues/120)
 
 ## Getting started
 
+Someday when it works...
+
 In your Gemfile:
 
-    gem "ransack"  # Last officially released gem
-
-Or if you want to use the bleeding edge:
-
-    gem "ransack", :git => "git://github.com/ernie/ransack.git" # Track git repo
+    gem "ransack-mongoid"  # Last officially released gem
 
 
 ## Usage
 
 Ransack can be used in one of two modes, simple or advanced.
 
-### Simple Mode
-
-This mode works much like MetaSearch, for those of you who are familiar with it, and
-requires very little setup effort.
-
-If you're coming from MetaSearch, things to note:
-
-  1. The default param key for search params is now `:q`, instead of `:search`. This is
-     primarily to shorten query strings, though advanced queries (below) will still
-     run afoul of URL length limits in most browsers and require a switch to HTTP 
-     POST requests. This key is
-[configurable](https://github.com/ernie/ransack/wiki/Configuration)
-  2. `form_for` is now `search_form_for`, and validates that a Ransack::Search object
-     is passed to it.
-  3. Common ActiveRecord::Relation methods are no longer delegated by the search object.
-     Instead, you will get your search results (an ActiveRecord::Relation in the case of
-     the ActiveRecord adapter) via a call to `Search#result`. If passed `:distinct => true`,
-     `result` will generate a `SELECT DISTINCT` to avoid returning duplicate rows, even if
-     conditions on a join would otherwise result in some.
-
-     Please note that for many databases, a sort on an associated table's columns will
-     result in invalid SQL with `:distinct => true` -- in those cases, you're on your own,
-     and will need to modify the result as needed to allow these queries to work. Thankfully,
-     9 times out of 10, sort against the search's base is sufficient, though, as that's
-     generally what's being displayed on your results page.
+See the [Ransack README](https://github.com/ernie/ransack) for more info.
 
 In your controller:
 
@@ -73,35 +45,67 @@ See Constants for a full list.
 
 ### Advanced Mode
 
-"Advanced" searches (ab)use Rails' nested attributes functionality in order to generate
-complex queries with nested AND/OR groupings, etc. This takes a bit more work but can
-generate some pretty cool search interfaces that put a lot of power in the hands of
-your users. A notable drawback with these searches is that the increased size of the
-parameter string will typically force you to use the HTTP POST method instead of GET. :(
+See [Ransack README](https://github.com/ernie/ransack)
 
-This means you'll need to tweak your routes...
+### Search solution ideas for Mongoid relations
 
-    resources :people do
-      collection do
-        match 'search' => 'people#search', :via => [:get, :post], :as => :search
-      end
+Here some thoughts how it could be achieved (without knowing much about the details of the Mongoid internals with regards to these matters...)
+
+```ruby
+class Post
+  include Mongoid::Document
+
+  field :name, type: String
+
+  embeds_many :comments 
+  belongs_to  :authors,   class_name: 'User'
+  has_many    :reviewers, class_name: 'User'
+
+  enable_ransack # includes Ransack macro module
+
+  # Ransack macro module makes the macro #search_field available
+  # creates embedded doc called 'search_reviewers' 
+  # of class SearchReview (unless class already exists)
+  # with fields name and rating
+  # this embedded doc will be auto-updated on after-save
+  search_field :reviewers do
+    index :name, :rating
+  end
+end
+```
+
+Uses the `after :save` hook to update an embedded index of relational attributes for use with search form. Determines which of the updated attributes are relations, and then for the ones of interest to the search (as defined by use of `#search_field` on the model), it will create embedded docs for those relational fields with a subsset of searchable attributes. 
+
+Chained relations?:
+
+```ruby
+  search_field :reviewers do
+    index :name, :rating
+
+    search_field :boss, for: %w{name title}    
+  end  
+```
+
+In the above example, the for option is a shorthand for a single index of attributes.
+The `#index` within the block could be used for more advanced scenarios, perhaps specifying additional options, another block or ... ?
+
+Here some pseudo code to illustrate:
+
+```ruby
+after :save do
+  ransack_attributes
+end
+
+def ransack_attributes
+  attributes.each do |att|
+    if search_attributes.include?(att) && relationship?(att)
+      update_search_field att
     end
+  end
+end
+```
 
-... and add another controller action ...
-
-    def search
-      index
-      render :index
-    end
-
-... and update your `search_form_for` line in the view ...
-
-    <%= search_form_for @q, :url => search_people_path,
-                            :html => {:method => :post} do |f| %>
-
-Once you've done so, you can make use of the helpers in Ransack::Helpers::FormBuilder to
-construct much more complex search forms, such as the one on the
-[demo page](http://ransack-demo.heroku.com).
+How do we then ensure that it works in the other direction? We need a way for the `belongs_to` (inverse relationship) to notify the owner of the relationship of a change, in order to update the index. This should be possible!
 
 ## Contributions
 
