@@ -3,16 +3,14 @@ $:.push File.expand_path("../lib", __FILE__)
 require "ransack/version"
 
 Gem::Specification.new do |s|
-  s.name        = "ransack"
+  s.name        = "ransack-mongoid"
   s.version     = Ransack::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ["Ernie Miller", "Ryan Bigg"]
+  s.authors     = ["Ernie Miller", "Ryan Bigg", "Elia Schito"]
   s.email       = ["ernie@erniemiller.org", "radarlistener@gmail.com"]
   s.homepage    = "https://github.com/ernie/ransack"
   s.summary     = %q{Object-based searching for ActiveRecord (currently).}
   s.description = %q{Ransack is the successor to the MetaSearch gem. It improves and expands upon MetaSearch's functionality, but does not have a 100%-compatible API.}
-
-  s.rubyforge_project = "ransack"
 
   s.add_dependency 'activerecord', '~> 3.0'
   s.add_dependency 'actionpack', '~> 3.0'
