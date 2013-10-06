@@ -6,8 +6,14 @@ module Ransack
       describe Context do
         subject { Context.new(Person) }
 
+        describe '#relation_for' do
+          it 'returns relation for given object' do
+            subject.object.should be_an ::ActiveRecord::Relation
+          end
+        end
+
         describe '#evaluate' do
-          it 'evaluates search obects' do
+          it 'evaluates search objects' do
             search = Search.new(Person, :name_eq => 'Joe Blow')
             result = subject.evaluate(search)
 

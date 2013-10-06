@@ -14,7 +14,7 @@ module Ransack
              :translate, :to => :base
 
     def initialize(object, params = {}, options = {})
-      params ||= {}
+      (params ||= {}).delete_if { |k, v| v.blank? && v != false }
       @context = Context.for(object, options)
       @context.auth_object = options[:auth_object]
       @base = Nodes::Grouping.new(@context, 'and')
@@ -72,7 +72,7 @@ module Ransack
       Nodes::Sort.new(@context).build(opts)
     end
 
-    def respond_to?(method_id)
+    def respond_to?(method_id, include_private = false)
       super or begin
         method_name = method_id.to_s
         writer = method_name.sub!(/\=$/, '')
@@ -88,6 +88,10 @@ module Ransack
       else
         super
       end
+    end
+
+    def inspect
+      "Ransack::Search<class: #{klass.name}, base: #{base.inspect}>"
     end
 
     private

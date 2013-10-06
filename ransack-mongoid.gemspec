@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "ransack/version"
+lib = File.expand_path("../lib", __FILE__)
+$: << lib unless $:.include? lib
+require 'ransack/version'
 
 Gem::Specification.new do |s|
   s.name        = "ransack-mongoid"
@@ -12,9 +13,11 @@ Gem::Specification.new do |s|
   s.summary     = %q{Object-based searching for ActiveRecord (currently).}
   s.description = %q{Ransack is the successor to the MetaSearch gem. It improves and expands upon MetaSearch's functionality, but does not have a 100%-compatible API.}
 
-  s.add_dependency 'activerecord', '~> 3.0'
-  s.add_dependency 'actionpack', '~> 3.0'
-  s.add_dependency 'polyamorous', '~> 0.5.0'
+  s.rubyforge_project = "ransack"
+
+  s.add_dependency 'activerecord', '>= 3.0'
+  s.add_dependency 'actionpack', '>= 3.0'
+  s.add_dependency 'polyamorous', '~> 0.6.0'
   s.add_development_dependency 'rspec', '~> 2.8.0'
   s.add_development_dependency 'machinist', '~> 1.0.6'
   s.add_development_dependency 'faker', '~> 0.9.5'
